@@ -6,9 +6,17 @@ namespace patternsolver
     public partial class Form1 : Form
     {
         private bool values_are_correct = false;
+        private bool padding_enabled = false;
+        private char escape_character = '&';
         public Form1()
         {
             InitializeComponent();
+        }
+
+        private void EnableButtons(bool enable)
+        {
+            copy_and_exit.Enabled = enable;
+            copy_to_clip.Enabled = enable;
         }
 
         private void Process()
@@ -19,22 +27,26 @@ namespace patternsolver
             if (end_value.Text.Length <= 0) return;
             if (pattern.Text.Length <= 0) return;
 
-            int start_val, end_val;
+            int start_val, end_val, padding_length;
 
             try
             {
                 start_val = int.Parse(start_value.Text);
                 end_val = int.Parse(end_value.Text);
+                padding_length = Math.Max(start_value.Text.Length, end_value.Text.Length);
+
+                if (start_val > end_val) throw new ArgumentException("Start value can't be lower than end value");
+                if (end_val - start_val > Int16.MaxValue) throw new ArgumentException($"Start and end value difference is too big (>{Int16.MaxValue})");
             }
             catch (Exception ex)
             {
                 output.Text = ex.Message;
-                copy_to_clip.Enabled = values_are_correct;
+                EnableButtons(values_are_correct);
                 return;
             }
 
             values_are_correct = true;
-            copy_to_clip.Enabled = values_are_correct;
+            EnableButtons(values_are_correct);
 
             StringBuilder sb = new();
             StringBuilder c = new();
@@ -43,13 +55,26 @@ namespace patternsolver
                 c.Clear();
                 c.Append(pattern.Text);
 
-                for (int j = 1; j <= 10; j++)
+                if (padding_enabled)
                 {
-                    c.Replace($"&ip{j}", $"{i + j}");
-                    c.Replace($"&im{j}", $"{i - j}");
+                    for (int j = 1; j <= 10; j++)
+                    {
+                        c.Replace($"{escape_character}ip{j}", $"{i + j}".PadLeft(padding_length, '0'));
+                        c.Replace($"{escape_character}im{j}", $"{i - j}".PadLeft(padding_length, '0'));
+                    }
+                    c.Replace($"{escape_character}i", i.ToString().PadLeft(padding_length, '0'));
+                }
+                else
+                {
+                    for (int j = 1; j <= 10; j++)
+                    {
+                        c.Replace($"{escape_character}ip{j}", $"{i + j}");
+                        c.Replace($"{escape_character}im{j}", $"{i - j}");
+                    }
+                    c.Replace($"{escape_character}i", i.ToString());
                 }
 
-                c.Replace("&i", i.ToString());
+
                 c.Append(Environment.NewLine);
                 sb.Append(c.ToString());
             }
@@ -59,6 +84,10 @@ namespace patternsolver
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            start_value.Focus();
+            padding_enabled = checkBox_padding.Checked;
+            escapeCharacter.Text = escape_character.ToString();
+
             Process();
         }
 
@@ -104,10 +133,54 @@ namespace patternsolver
 
         private void copy_to_clip_Click(object sender, EventArgs e)
         {
-            if (values_are_correct)
+            Clipboard.SetText(output.Text);
+        }
+
+        private void copy_and_exit_Click(object sender, EventArgs e)
+        {
+            Clipboard.SetText(output.Text);
+            Environment.Exit(0);
+        }
+
+        private void Process(object sender, EventArgs e)
+        {
+            Process();
+        }
+
+        private void Pattern_KeyPress(object sender, KeyPressEventArgs e)
+        {
+        }
+
+        private void Form_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Modifiers == Keys.Control)
             {
-                Clipboard.SetText(output.Text);
+                if (e.KeyCode == Keys.Return)
+                {
+                    copy_and_exit.PerformClick();
+                    e.Handled = true;
+                }
             }
+            if (e.KeyCode == Keys.Escape)
+            {
+                Environment.Exit(0);
+            }
+        }
+
+        private void checkBox_padding_CheckedChanged(object sender, EventArgs e)
+        {
+            padding_enabled = checkBox_padding.Checked;
+            Process();
+        }
+
+        private void escapeCharacter_TextChanged(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(escapeCharacter.Text))
+            {
+                return;
+            };
+            escape_character = escapeCharacter.Text[0];
+            Process();
         }
     }
 }
