@@ -151,7 +151,7 @@ namespace patternsolver
         {
         }
 
-        private void Form_KeyDown(object sender, KeyEventArgs e)
+        private void Form_KeyDownHandler(object sender, KeyEventArgs e)
         {
             if (e.Modifiers == Keys.Control)
             {
@@ -160,10 +160,40 @@ namespace patternsolver
                     copy_and_exit.PerformClick();
                     e.Handled = true;
                 }
+                else if (e.KeyCode == Keys.C)
+                {
+                    copy_to_clip.PerformClick();
+                    e.Handled = true;
+                }
+                return;
             }
+            if (e.Modifiers == Keys.Alt)
+            {
+                if (e.KeyCode == Keys.I)
+                {
+                    pattern.Paste($"{escape_character}i");
+                    e.Handled = true;
+                    return;
+                }
+                else if (e.KeyCode == Keys.P)
+                {
+                    pattern.Paste($"{escape_character}ip");
+                    e.Handled = true;
+                    return;
+                }
+                else if (e.KeyCode == Keys.M)
+                {
+                    pattern.Paste($"{escape_character}im");
+                    e.Handled = true;
+                    return;
+                }
+                return;
+            }
+
             if (e.KeyCode == Keys.Escape)
             {
                 Environment.Exit(0);
+                return;
             }
         }
 
